@@ -3,14 +3,23 @@ A simple companion to help you manage your tasks, ideas and help you do what you
 
 # File-system:
 Import.txt = list of all libraries used in this system
+
 Main.py = This is the main file which interlinks all the components of the system.
+
 Window.py = py file responsible for anything regrading alteration/manipulation of GUI windows
+
 File.py = py file responsible for anything regrading alteration/manipulation of files present in users system
+
 Voice.py = file of everything regarding voice interaction
+
 Text.py = file of everything regarding text interaction
+
 Robo_comm.py = communication between PC and physical robot
+
 Robo_comp.py = processing of inputs from robot and commands of acuation to robot
+
 Personality.py = Manners of the assistant
+
 GUI.py = File of the GUI of the assistant
 
 # execution order:
