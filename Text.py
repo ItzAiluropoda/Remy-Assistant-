@@ -1,1 +1,0 @@
-#file of everything regarding text interaction

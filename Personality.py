@@ -1,1 +1,0 @@
-#Manners of the assistant
