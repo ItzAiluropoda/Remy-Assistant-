@@ -58,7 +58,7 @@ PROVIDERS = {
         "base_url": "http://localhost:11434/v1/chat/completions",
         "api_key_env": None,
         "requires_key": False,
-        "model": "qwen-remy",
+        "model": "qwen2.5:7b",
         "notes": "No rate limits - speed and quality depend on your GPU/VRAM.",
     },
     # Placeholder for a future CLI-based provider (e.g. Antigravity).

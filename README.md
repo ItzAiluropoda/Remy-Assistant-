@@ -35,5 +35,3 @@ Build memory.py —
 the SQLite schema for the three tables above, plus the retrieval functions remy_comm.py is already stubbed to call.
 
 Wire the system prompt to load from core_identity instead of the hardcoded string currently in remy_comm.py.
-
-Somewhere in there — actually test the Ollama path end-to-end now that you have a working conversational loop, so the local/cloud swap is proven, not just theoretical.
