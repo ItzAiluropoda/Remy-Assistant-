@@ -17,49 +17,29 @@ holding the current conversation.
 """
 
 import llm_interaction
-# import memory  # TODO: uncomment once memory.py exists (see SYSTEM PROMPT section below)
+import memory
 
 # ---------------------------------------------------------------------------
 # SYSTEM PROMPT / CORE IDENTITY
 # ---------------------------------------------------------------------------
-# FUTURE (once memory.py exists): the system prompt should be BUILT, not
-# hardcoded - pulled fresh from memory.py at startup so editing Remy's
-# personality/preferences/tools means editing the memory file, not this code.
+# The system prompt is now BUILT fresh each turn, not hardcoded - pulled
+# from memory.py so editing Remy's personality/preferences/tools means
+# editing memory.py, not this file.
 #
-# memory.py will need to expose something like:
 #   memory.get_core_identity()
-#       -> returns the small "who Remy is" block: behaviors, tone rules,
-#          your standing preferences, list of available tools/skills.
-#          This is the piece that "tool" and "preference" type interactions
-#          are allowed to rewrite.
+#       -> the small "who Remy is" block: behaviors, standing preferences,
+#          available tools. Always included, kept small.
 #   memory.get_relevant_projects(user_text)
-#       -> returns any project detail worth injecting THIS turn, based on:
-#          a) the project is mentioned by name/title in user_text
-#          b) one of the project's tags matches a keyword in user_text
-#          c) the project's status == "active"
-#          Returns "" (nothing) most of the time - only pulls in project
-#          detail when actually relevant, to keep token usage low.
-#
-# Rough shape once wired up:
-#
-# def build_system_prompt(user_text=""):
-#     core = memory.get_core_identity()
-#     project_context = memory.get_relevant_projects(user_text)
-#     content = core
-#     if project_context:
-#         content += "\n\nRelevant project context:\n" + project_context
-#     return {"role": "system", "content": content}
-#
-# For now (no memory.py yet), a static prompt is used so the file can run
-# on its own:
+#       -> project detail worth injecting THIS turn, based on name mention,
+#          tag match, or active status. Returns "" most of the time.
 
-SYSTEM_PROMPT = {
-    "role": "system",
-    "content": (
-        "You are Remy, a personal desktop assistant. Be concise, direct, "
-        "and helpful. You do not have long-term memory yet in this version."
-    ),
-}
+def build_system_prompt(user_text=""):
+    core = memory.get_core_identity()
+    project_context = memory.get_relevant_projects(user_text)
+    content = core
+    if project_context:
+        content += "\n\nRelevant project context:\n" + project_context
+    return {"role": "system", "content": content}
 
 
 # ---------------------------------------------------------------------------
@@ -76,10 +56,7 @@ class RemyComm:
 
     def __init__(self, provider_key):
         self.provider_key = provider_key
-        self.history = [SYSTEM_PROMPT]
-        # FUTURE: once memory.py exists, SYSTEM_PROMPT won't be fixed at
-        # startup - see handle_input() below, since project relevance
-        # depends on what the user actually says each turn.
+        self.history = [build_system_prompt()]
 
     def handle_input(self, user_text):
         """
@@ -90,18 +67,21 @@ class RemyComm:
                 do with it - print it, put it in a GUI, feed it to
                 text-to-speech, or send it to the robot's actuators.
         """
-        # FUTURE (once memory.py exists): rebuild self.history[0] here each
-        # turn using build_system_prompt(user_text), so relevant project
-        # context (tag/name match, or currently active) gets pulled in only
-        # when needed - e.g.:
-        #     self.history[0] = build_system_prompt(user_text)
-        # Also this is the natural spot to log the turn into memory.py's
-        # interactions table (category "call", "tool", "preference", etc.)
-        # once that logging function exists.
+        # Rebuild the system prompt each turn so relevant project context
+        # (name/tag match, or active status) gets pulled in only when needed.
+        self.history[0] = build_system_prompt(user_text)
 
         self.history.append({"role": "user", "content": user_text})
         reply = llm_interaction.send_message(self.provider_key, self.history)
         self.history.append({"role": "assistant", "content": reply})
+
+        # Log this exchange to the interactions log. category="call" covers
+        # a plain conversational turn for now - tool/preference/movement/
+        # contact logging can be added at their specific trigger points
+        # once those features exist (e.g. when a preference is actually
+        # changed, or the robot moves).
+        memory.log_interaction(category="call", summary=user_text[:200])
+
         return reply
 
 

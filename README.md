@@ -2,7 +2,34 @@
 A simple companion to help you manage your tasks, ideas and help you do what you want to do by automating the simple things, like moving tools to where you need them or just finding them wherever you last left them.
 
 # File-system:
-
+Remy/
+├── remy_comm.py          # central hub — conversation history, builds system prompt
+│                          # each turn from memory.py, sends via llm_interaction.py,
+│                          # logs each turn, entry point for terminal (and future
+│                          # GUI/voice/robot interfaces)
+│
+├── llm_interaction.py     # provider layer — PROVIDERS dict (Gemini via native
+│                          # google-genai SDK, Ollama via OpenAI-compatible endpoint),
+│                          # provider selection menu, connection check, send_message()
+│
+├── memory.py              # sole gatekeeper to all three databases below —
+│                          # remy_comm.py never touches a .db file directly
+│
+├── core.db                # SQLite — core_identity table (behavior/preference/tool
+│                          # rows). Populated with Remy's personality, speech style,
+│                          # and 15 tool proficiencies
+│
+├── interactions.db        # SQLite — timestamped log (category: movement/call/
+│                          # contact/tool/preference). Auto-created on first run,
+│                          # write-only for now
+│
+├── projects.db            # SQLite — title/status/tags/detail. Auto-created on
+│                          # first run, currently empty (no projects added yet)
+│
+├── .gitignore             # excludes __pycache__, venvs, .env, *.db, IDE folders,
+│                          # OS junk, logs
+│
+└── README.md               
 
 # execution order:
 v0.1:
@@ -35,3 +62,30 @@ Build memory.py —
 the SQLite schema for the three tables above, plus the retrieval functions remy_comm.py is already stubbed to call.
 
 Wire the system prompt to load from core_identity instead of the hardcoded string currently in remy_comm.py.
+
+v0.2:
+Whats added,
+
+new python file memory
+database files core.db, intractions.db, project.db
+
+memory.py as the single gatekeeper in front of three SQLite databases — remy_comm.py never touches a .db file directly, it only calls functions on memory.
+
+remy_comm.py now rebuilds the system prompt fresh every turn: core + any relevant_projects(user_text) hit, then logs the exchange via log_interaction().
+
+Core identity populated
+
+core.db now holds real content instead of a placeholder:
+
+Ollama connectivity confirmed — qwen2.5:7b direct, same endpoint pattern as before.
+
+
+Known gaps, carried forward:
+
+The "annoyed at repetition" trait is roleplayed from the prompt, not mechanically tracked — no repeat-detection logic exists yet.
+
+core.db editing is still manual Python calls (add_core_entry, etc.) — no CLI/GUI for it.
+
+projects.db is empty — no real projects added yet.
+
+"tool"/"preference" interaction categories exist in the schema but nothing currently triggers them automatically to rewrite core.db.
