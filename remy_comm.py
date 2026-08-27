@@ -117,17 +117,68 @@ def run_terminal():
 
 
 # ---------------------------------------------------------------------------
+# VOICE INTERFACE (v2 - active now)
+# ---------------------------------------------------------------------------
+# voice.py owns the mic (speech-to-text) and speaker (text-to-speech), both
+# fully local. Flow: mic audio -> STT -> text -> remy.handle_input(text)
+# -> reply -> strip *action* motions -> TTS -> speaker audio.
+#
+# Note: *action* motions (e.g. "*hands up*") are kept as personality flavor
+# in the printed/logged text, but are NOT spoken aloud - voice.speak()
+# strips them before passing text to the TTS engine.
+
+def run_voice():
+    import voice  # imported here, not at the top of the file, so terminal-
+                   # only use of remy_comm.py doesn't require pyttsx3/
+                   # faster-whisper/etc. to be installed.
+
+    provider_key = llm_interaction.choose_provider()
+
+    if not llm_interaction.connection_check(provider_key):
+        print("Connection check failed. Fix the issue above and try again.")
+        return
+
+    mic_index = voice.choose_microphone()
+    # NOTE: speaker output is NOT selectable here - pyttsx3 has no way to
+    # choose an output device, it always plays through whatever Windows
+    # currently has set as the DEFAULT playback device. If you want Remy's
+    # voice coming out of your headset specifically, set the headset as
+    # your Windows default output (Settings > Sound) before running this.
+
+    remy = RemyComm(provider_key)
+
+    print("\nRemy is online (voice mode). Say 'exit' to quit, or Ctrl+C.\n")
+    while True:
+        try:
+            user_input = voice.listen(device_index=mic_index)
+            if not user_input:
+                continue  # nothing understood, just listen again
+
+            print(f"You: {user_input}")
+
+            if user_input.lower().strip("., ") == "exit":
+                voice.speak("Goodbye.")
+                print("Goodbye.")
+                break
+
+            reply = remy.handle_input(user_input)
+            print(f"Remy: {reply}\n")
+            voice.speak(reply)
+
+        except KeyboardInterrupt:
+            print("\nGoodbye.")
+            break
+        except Exception as e:
+            print(f"ERROR: {e}\n")
+
+
+# ---------------------------------------------------------------------------
 # FUTURE INTERFACE HOOKS (not implemented yet - marking where they'll go)
 # ---------------------------------------------------------------------------
 # def run_gui():
 #     # gui.py owns the window/widgets. For each message the user sends in
 #     # the GUI, it will call: reply = remy.handle_input(text_from_textbox)
 #     # and display `reply` in the chat window. Same RemyComm class as above.
-#
-# def run_voice():
-#     # voice.py owns the mic (speech-to-text) and speaker (text-to-speech).
-#     # Flow: mic audio -> STT -> text -> remy.handle_input(text) -> reply
-#     #       -> TTS -> speaker audio.
 #
 # def run_robot():
 #     # robot.py owns sensor input (camera/distance/mic) and actuator output
@@ -136,5 +187,19 @@ def run_terminal():
 #     # whichever actuator/response system is relevant.
 
 
+def _choose_interface():
+    print("Choose interface:")
+    print("  1. Terminal (typing)")
+    print("  2. Voice (microphone + speaker)")
+    while True:
+        choice = input("Select (1-2): ").strip()
+        if choice == "1":
+            return run_terminal
+        if choice == "2":
+            return run_voice
+        print("Invalid choice, try again.")
+
+
 if __name__ == "__main__":
-    run_terminal()
+    interface = _choose_interface()
+    interface()
